@@ -55,21 +55,37 @@ class NotificationListenerService : NotificationListenerService() {
 //        startForeground(application?.packageName?.hashCode()!!, NotificationCompat.Builder(this.applicationContext, notificationChannelCompat.id).build())
 
         refreshNotifications()
-        
+
         statusBarNotificationLiveData.postValue(statusBarNotification)
     }
-    
+
     private fun refreshNotifications() {
         synchronized(statusBarNotification) {
-            statusBarNotification.clear()
+            val __blklist = arrayListOf<StatusBarNotification>()
+            statusBarNotification.forEach {
+                if (it.hasExpired) {
+                    __blklist.add(it)
+                }
+            }
+
+            __blklist.forEach {
+                statusBarNotification.removeAt(
+                    statusBarNotification.getIndex(it) ?: return@forEach
+                )
+            }
+
             activeNotifications.forEach {
-                if (it == null || it.cannotBeAddedOrRemove()) return
+                if (it.cannotBeAdded) return
                 statusBarNotification.add(it)
             }
         }
     }
-    
-    
+
+    private val StatusBarNotification.hasExpired: Boolean
+        get() {
+            return (System.currentTimeMillis() - this.postTime) > 20000L
+        }
+
     override fun onListenerDisconnected() {
         isServiceConnnected = false
         Log.i("dahham", "service disconnected")
@@ -77,8 +93,8 @@ class NotificationListenerService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-        if (sbn == null || sbn.cannotBeAddedOrRemove()) return
-        
+        if (sbn?.cannotBeAdded!!) return
+
         synchronized(statusBarNotification) {
             statusBarNotification.add(sbn)
         }
@@ -88,10 +104,10 @@ class NotificationListenerService : NotificationListenerService() {
     
     override fun onNotificationRemoved(sbn: StatusBarNotification?, rankingMap: RankingMap?, reason: Int) {
         super.onNotificationRemoved(sbn, rankingMap, reason)
-        if (sbn == null || sbn.cannotBeAddedOrRemove()) return
-    
-        synchronized(statusBarNotification){
-            statusBarNotification.removeAt(statusBarNotification.getId(sbn) ?: return)
+        if (sbn?.cannotBeRemoved!!) return
+
+        synchronized(statusBarNotification) {
+            statusBarNotification.removeAt(statusBarNotification.getIndex(sbn) ?: return)
         }
         statusBarNotificationLiveData.postValue(statusBarNotification)
     }
@@ -99,9 +115,9 @@ class NotificationListenerService : NotificationListenerService() {
     private fun List<StatusBarNotification>.has(other: StatusBarNotification): Boolean{
         return this.any { it.id == other.id }
     }
-    
-    private fun List<StatusBarNotification>.getId(other: StatusBarNotification): Int?{
-        
+
+    private fun List<StatusBarNotification>.getIndex(other: StatusBarNotification): Int? {
+
         this.forEachIndexed { index, statusBarNotification ->
             if (statusBarNotification.id == other.id){
                 return index
@@ -110,7 +126,14 @@ class NotificationListenerService : NotificationListenerService() {
         
         return null
     }
-    
-   
-    private fun StatusBarNotification.cannotBeAddedOrRemove() = statusBarNotification.has(this) || this.isOngoing || this.packageName == application.packageName
+
+    private val StatusBarNotification?.cannotBeAdded: Boolean
+    get(){
+        return (this == null || this.isOngoing || statusBarNotification.has(this))
+    }
+
+    private val StatusBarNotification?.cannotBeRemoved: Boolean
+    get() {
+        return (this == null || this.hasExpired.not() || this.isOngoing)
+    }
 }
