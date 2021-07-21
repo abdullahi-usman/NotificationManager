@@ -2,6 +2,7 @@ package com.dahham.notificationmanager
 
 import android.annotation.SuppressLint
 import android.app.NotificationManager
+import android.app.ProgressDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
@@ -17,8 +18,12 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
     
@@ -38,8 +43,19 @@ class MainActivity : AppCompatActivity() {
         }
         
         findViewById<Button>(R.id.btn_refresh).setOnClickListener {
-            serviceConnection?.refreshNotifications()
-            notificationRecyclerView.adapter?.notifyDataSetChanged()
+            val progress = ProgressDialog(this)
+            progress.setMessage("Refreshing, Please wait...")
+            progress.show()
+
+            lifecycleScope.launch(Dispatchers.IO){
+                serviceConnection?.refreshNotifications()
+                withContext(Dispatchers.Main){
+                    notificationRecyclerView.adapter?.notifyDataSetChanged()
+                    progress.dismiss()
+                }
+            }
+
+
         }
     }
     
