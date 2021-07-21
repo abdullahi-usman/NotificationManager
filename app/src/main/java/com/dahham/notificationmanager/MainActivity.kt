@@ -16,6 +16,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.lifecycleScope
@@ -158,7 +159,10 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1 && notificationManager.isNotificationListenerAccessGranted(ComponentName(this, NotificationListenerService::class.java)).not()) {
-            startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+            AlertDialog.Builder(this).setMessage("Notification Manager needs Notification permission to function, would you like to give this permission?")
+                .setNegativeButton("No"){ dialog, index -> dialog.dismiss(); finish() }.setPositiveButton("Yes") { dialog, index ->
+                    startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                }.show()
         }
     }
     
