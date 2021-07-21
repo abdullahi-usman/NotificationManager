@@ -10,23 +10,23 @@ import androidx.lifecycle.MutableLiveData
 import java.util.*
 
 class NotificationListenerService : NotificationListenerService() {
-    
+
     private val statusBarNotification = arrayListOf<StatusBarNotification>()
 
-    private val statusBarNotificationLiveData : MutableLiveData<List<StatusBarNotification>> by lazy {
+    private val statusBarNotificationLiveData: MutableLiveData<List<StatusBarNotification>> by lazy {
         MutableLiveData<List<StatusBarNotification>>(statusBarNotification)
     }
-    
+
     inner class LocalBinder : Binder() {
         fun getService(): com.dahham.notificationmanager.NotificationListenerService {
             return this@NotificationListenerService
         }
 
-        fun getNotifications(): LiveData<List<StatusBarNotification>>{
+        fun getNotifications(): LiveData<List<StatusBarNotification>> {
             return statusBarNotificationLiveData
         }
-        
-        fun refreshNotifications(): List<StatusBarNotification>{
+
+        fun refreshNotifications(): List<StatusBarNotification> {
             this@NotificationListenerService.refreshNotifications()
             return statusBarNotification
         }
@@ -44,7 +44,7 @@ class NotificationListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
         isServiceConnnected = true
         Log.i("dahham", "service connected")
-        
+
 //        val notificationChannelCompat = NotificationChannelCompat.Builder(
 //            "notificationbackground",
 //            NotificationManagerCompat.IMPORTANCE_DEFAULT
@@ -98,11 +98,15 @@ class NotificationListenerService : NotificationListenerService() {
         synchronized(statusBarNotification) {
             statusBarNotification.add(sbn)
         }
-        
+
         statusBarNotificationLiveData.postValue(statusBarNotification)
     }
-    
-    override fun onNotificationRemoved(sbn: StatusBarNotification?, rankingMap: RankingMap?, reason: Int) {
+
+    override fun onNotificationRemoved(
+        sbn: StatusBarNotification?,
+        rankingMap: RankingMap?,
+        reason: Int
+    ) {
         super.onNotificationRemoved(sbn, rankingMap, reason)
         if (sbn?.cannotBeRemoved!!) return
 
@@ -111,19 +115,19 @@ class NotificationListenerService : NotificationListenerService() {
         }
         statusBarNotificationLiveData.postValue(statusBarNotification)
     }
-    
-    private fun List<StatusBarNotification>.has(other: StatusBarNotification): Boolean{
+
+    private fun List<StatusBarNotification>.has(other: StatusBarNotification): Boolean {
         return this.any { it.id == other.id }
     }
 
     private fun List<StatusBarNotification>.getIndex(other: StatusBarNotification): Int? {
 
         this.forEachIndexed { index, statusBarNotification ->
-            if (statusBarNotification.id == other.id){
+            if (statusBarNotification.id == other.id) {
                 return index
             }
         }
-        
+
         return null
     }
 
