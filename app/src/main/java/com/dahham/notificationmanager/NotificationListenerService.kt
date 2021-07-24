@@ -117,7 +117,7 @@ class NotificationListenerService : NotificationListenerService() {
     }
 
     private fun List<StatusBarNotification>.has(other: StatusBarNotification): Boolean {
-        return this.any { it.id == other.id }
+        return this.any { it.key == other.key }
     }
 
     private fun List<StatusBarNotification>.getIndex(other: StatusBarNotification): Int? {
